@@ -1,14 +1,17 @@
 Here's how to get this code running on Ubuntu Server Edition 10.04 LTS.  For
 more general install instructions see the NOTE at the bottom of this document.
 
-1.  Prerequisites: solr + jetty, python imaging library, python lxml bindings,
+0.  Prerequisites: solr + jetty, python imaging library, python lxml bindings,
 python-setuptools, virtualenv, gdal, postgresql with postgis:
 
     $ sudo apt-get install python-setuptools solr-jetty python-lxml python-imaging
     $ sudo apt-get install gdal-bin proj postgresql-8.4-postgis python-psycopg2
     $ sudo easy_install virtualenv
 
-2.  Create a virtualenv. For more info, see http://pypi.python.org/pypi/virtualenv
+1.  Make sure you're in the main sapling directory. You should see directories like
+    install_config, docs and static here.
+
+2.  Create a virtualenv. For more info, see http://pypi.python.org/pypi/virtualenv.
     $ virtualenv env
     
     Activate the new environment. Run all of the following commands in this environment:
