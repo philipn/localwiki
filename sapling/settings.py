@@ -198,6 +198,7 @@ MIDDLEWARE_CLASSES = (
     'honeypot.middleware.HoneypotMiddleware',
     'versionutils.versioning.middleware.AutoTrackUserInfoMiddleware',
     'redirects.middleware.RedirectFallbackMiddleware',
+    'django.middleware.transaction.TransactionMiddleware',
 )
 
 ROOT_URLCONF = 'sapling.urls'
