@@ -15,6 +15,8 @@ from django.utils.translation import ugettext_lazy
 from django_randomfilenamestorage.storage import (
     RandomFilenameFileSystemStorage)
 
+import eav
+
 from ckeditor.models import HTML5FragmentField
 from versionutils import diff
 from versionutils import versioning
@@ -236,6 +238,7 @@ class PageDiff(diff.BaseModelDiff):
 diff.register(Page, PageDiff)
 versioning.register(Page)
 
+eav.register(Page)
 
 class PageFile(models.Model):
     file = models.FileField(ugettext_lazy("file"), upload_to='pages/files/',

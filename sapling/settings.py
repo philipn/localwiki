@@ -256,6 +256,8 @@ INSTALLED_APPS = (
     'dashboard',
     'utils',
     'tags',
+
+    'eav',
 )
 
 LOCAL_INSTALLED_APPS = ()
