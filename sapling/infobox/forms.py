@@ -47,8 +47,6 @@ class InfoboxForm(BaseDynamicEntityForm):
 
             elif datatype == attribute.TYPE_DATE:
                 defaults.update({'widget': AdminSplitDateTime})
-            elif datatype == attribute.TYPE_OBJECT:
-                continue
 
             MappedField = self.FIELD_CLASSES[datatype]
             self.fields[attribute.slug] = MappedField(**defaults)
