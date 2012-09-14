@@ -1,9 +1,7 @@
 from copy import deepcopy
-from django import forms
 from eav.forms import BaseDynamicEntityForm
-from django.forms.models import ModelForm, inlineformset_factory,\
-    ModelChoiceField
-from eav.models import Attribute, EnumGroup, EnumValue
+from django.forms.models import ModelForm, ModelChoiceField
+from eav.models import Attribute
 from django.contrib.contenttypes.models import ContentType
 from pages.models import Page
 from django.contrib.admin.widgets import AdminSplitDateTime
@@ -26,7 +24,6 @@ class InfoboxForm(BaseDynamicEntityForm):
 
             defaults = {
                 'label': attribute.name.capitalize(),
-                'required': attribute.required,
                 'help_text': attribute.help_text,
                 'validators': attribute.get_validators(),
             }
@@ -52,7 +49,8 @@ class InfoboxForm(BaseDynamicEntityForm):
             self.fields[attribute.slug] = MappedField(**defaults)
 
             # fill initial data (if attribute was already defined)
-            if value and not datatype == attribute.TYPE_ENUM: #enum done above
+            # enum done above
+            if value and not datatype == attribute.TYPE_ENUM:
                 self.initial[attribute.slug] = value
 
     def save(self, commit=True):
@@ -82,7 +80,7 @@ class AttributeCreateForm(ModelForm):
     class Meta:
         model = Attribute
         fields = ('name', 'description', 'datatype', 'enum_group')
-        exclude = ('site','slug',)
+        exclude = ('site', 'slug')
 
     def save(self, *args, **kwargs):
         # tie attributes to Page model on save
