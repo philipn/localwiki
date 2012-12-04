@@ -102,13 +102,22 @@ class ChangesTracker(object):
         }
 
         attrs.update(get_history_methods(self, model))
+        ### BRANCH infobox
         # Store _misc_members for later lookup.
         misc_members = self.get_misc_members(model)
         attrs.update(misc_members)
         attrs.update({'_original_callables':
             self.get_callables(model, skip=misc_members)})
         attrs.update(Meta=type('Meta', (), self.get_meta_options(model)))
-
+        ### BRANCH infobox_diff
+        #if not model._meta.parents:
+        #    # Store _misc_members for later lookup.
+        #    misc_members = self.get_misc_members(model)
+        #    attrs.update(misc_members)
+        #    attrs.update({'_original_callables':
+        #        self.get_callables(model, skip=misc_members)})
+        #    attrs.update(Meta=type('Meta', (), self.get_meta_options(model)))
+        ### END
         if not is_versioned(model.__base__):
             # If we're subclassing a historical instance, then we don't
             # need to re-declare these history fields.
@@ -125,9 +134,19 @@ class ChangesTracker(object):
         # mirror this DB relationship for our historical models.
         # Migrations are easier this way -- you migrate historical
         # models in the exact same fashion as non-historical models.
+        ### BRANCH infobox
         if is_versioned(model.__base__):
             return type(name, (get_versions(model.__base__).model,), attrs)
-        return type(name, (model.__base__,), attrs)
+	if not model.__base__._meta.abstract:
+	    return type(name, (model.__base__,), attrs)
+        ### BRANCH infobox_diff
+        #if model._meta.parents:
+        #    if is_versioned(model.__base__):
+        #        return type(
+        #            name, (get_versions(model.__base__).model,), attrs)
+        #    return type(name, (model.__base__,), attrs)
+
+        #return type(name, (models.Model,), attrs)
 
     def wrap_model_fields(self, model):
         """
@@ -206,7 +225,7 @@ class ChangesTracker(object):
                 # Skip callables - we deal with these separately.
                 del d[k]
                 continue
-
+        ### BRANCH infobox
         if ignore_subclass_members and model.__base__ != models.Model:
             base_misc_members = self.get_misc_members(model.__base__,
                 ignore_subclass_members=False)
@@ -214,6 +233,7 @@ class ChangesTracker(object):
             for k in d.keys():
                 if k in base_misc_members:
                     del d[k]
+        ## BRANCH infobox_diff omits this ^^^
         return d
 
     def get_callables(self, model, skip=None, ignore_subclass_callables=True):
@@ -228,6 +248,7 @@ class ChangesTracker(object):
             if callable(attrs[k]):
                 d[k] = attrs[k]
 
+        ## BRANCH infobox
         if ignore_subclass_callables and model.__base__ != models.Model:
             base_callables = self.get_callables(model.__base__, skip=skip,
                 ignore_subclass_callables=False)
@@ -235,6 +256,7 @@ class ChangesTracker(object):
             for k in base_callables:
                 if k in d.keys():
                     del d[k]
+        ## BRANCH infobox_diff omits this ^^^
         return d
 
     def get_fields(self, model, ignore_subclass_fields=True):
@@ -342,15 +364,19 @@ class ChangesTracker(object):
                     )
 
             attrs[field.name] = field
-
-        if ignore_subclass_fields and model.__base__ != models.Model:
+        ## BRANCH infobox
+        if (ignore_subclass_fields and model.__base__ != models.Model and
+            not model.__base__._meta.abstract):
             base_fields = self.get_fields(model.__base__,
                 ignore_subclass_fields=False)
             # Let's not duplicate fields on the base class.
             for k in base_fields:
                 if k in attrs.keys():
                     del attrs[k]
+        ## BRANCH infobox_diff omits this
 
+	if 'PageValue' in str(model):
+	  import pdb;pdb.set_trace()
         return attrs
 
     def get_extra_history_fields(self, model):
@@ -506,9 +532,9 @@ class ChangesTracker(object):
                 models.signals.pre_delete.disconnect(method, model, weak=False)
 
     def setup_m2m_signals(self, model):
-    """
-    Enables the m2m signal handlers on versioned M2M relations.
-    """
+        """
+        Enables the m2m signal handlers on versioned M2M relations.
+        """
         for field in model._meta.local_many_to_many:
             parent_model = field.rel.to
 
@@ -539,6 +565,7 @@ class ChangesTracker(object):
                 m2m_items = []
                 for o in current_objs:
                     m2m_items.append(get_versions(o).most_recent())
+                print hist_instance._meta.many_to_many[0].m2m_reverse_name()
                 setattr(hist_instance, field.name, m2m_items)
 
     def m2m_changed(self, attname, sender, instance, action, reverse,

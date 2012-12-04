@@ -67,7 +67,7 @@ class CommentMixin(object):
         #super(CommentMixin, self).save(*args, **argv)
 
 
-class PageValue(BaseValue, CommentMixin): ## workaround, mixin should be first
+class PageValue(BaseValue): ## workaround, mixin should be first
     attribute = models.ForeignKey(PageAttribute, db_index=True,
         verbose_name=_(u"attribute"))
     entity = models.ForeignKey(Page, blank=False, null=False)
@@ -79,9 +79,9 @@ class PageValue(BaseValue, CommentMixin): ## workaround, mixin should be first
         related_name='eav_value')
 
     ## workaround for versionutils not working with model mixins
-    def save(self, *args, **kwargs):
-        CommentMixin.save(self, *args, **kwargs)
-        BaseValue.save(self, *args, **kwargs)
+    #def save(self, *args, **kwargs):
+    #    CommentMixin.save(self, *args, **kwargs)
+    #    BaseValue.save(self, *args, **kwargs)
 
     def get_save_comment(self):
         return u"%s %s" % (_(u"Updated"), self.attribute.name)

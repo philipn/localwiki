@@ -1276,3 +1276,4 @@ class ChangesTrackingTest(TestCase):
         self.assertEqual(m30.versions.all()[0].b, 'magic b')
         self.assertEqual(m30.versions.all()[0].c, 'magic c')
         self.assertEqual(m30.versions.all()[0].d(), 'magic d')
+
