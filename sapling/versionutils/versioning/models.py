@@ -135,10 +135,14 @@ class ChangesTracker(object):
         # Migrations are easier this way -- you migrate historical
         # models in the exact same fashion as non-historical models.
         ### BRANCH infobox
+        if 'PageValue' in str(model): import pdb;pdb.set_trace()
         if is_versioned(model.__base__):
             return type(name, (get_versions(model.__base__).model,), attrs)
-	if not model.__base__._meta.abstract:
-	    return type(name, (model.__base__,), attrs)
+        #if (hasattr(model.__base__, '_meta') and
+        #    self.ineligible_for_history_model(model.__base__)):
+        #    return type(name, (models.Model,), attrs)
+        #return type(name, (model.__base__,), attrs)
+        return type(name, (models.Model,), attrs)
         ### BRANCH infobox_diff
         #if model._meta.parents:
         #    if is_versioned(model.__base__):
@@ -186,7 +190,7 @@ class ChangesTracker(object):
         'db_tablespace',
     ]
 
-    def get_misc_members(self, model, ignore_subclass_members=True):
+    def get_misc_members(self, model):
         # Would like to know a better way to do this.
         # Ideally we would subclass the model and then extend it,
         # but Django won't let us replace a field (in our case, a
@@ -204,7 +208,16 @@ class ChangesTracker(object):
         # we can swap out our call to type() in create_history_model()
         # for a call to a metaclass with __instancecheck__ /
         # __subclasscheck__ defined (a'la python 2.6)
+        if 'M29SConcreteCustomAttributes' in str(model):
+            import pdb;pdb.set_trace()
         d = copy.copy(dict(model.__dict__))
+        #d = {}
+        #for x in dir(model):
+        #    try:
+        #        d[x] = getattr(model, x)
+        #    except AttributeError:
+        #        pass
+        #d = dict((x,getattr(model, x)) for x in dir(model))
         for k in ChangesTracker.MEMBERS_TO_SKIP:
             if d.get(k, None) is not None:
                 del d[k]
@@ -226,17 +239,23 @@ class ChangesTracker(object):
                 del d[k]
                 continue
         ### BRANCH infobox
-        if ignore_subclass_members and model.__base__ != models.Model:
-            base_misc_members = self.get_misc_members(model.__base__,
-                ignore_subclass_members=False)
-            # Let's not duplicate members on the base class.
-            for k in d.keys():
-                if k in base_misc_members:
-                    del d[k]
+        #if (ignore_subclass_members and model.__base__ != models.Model and
+        #    not self.ineligible_for_history_model(model.__base__)):
+        #    base_misc_members = self.get_misc_members(model.__base__,
+        #        ignore_subclass_members=False)
+        #    # Let's not duplicate members on the base class.
+        #    for k in d.keys():
+        #        if k in base_misc_members:
+        #            del d[k]
         ## BRANCH infobox_diff omits this ^^^
+        if model.__base__ != models.Model:
+            base_members = self.get_misc_members(model.__base__)
+            for k in base_members:
+                if k not in d:
+                    d[k] = base_members[k]
         return d
 
-    def get_callables(self, model, skip=None, ignore_subclass_callables=True):
+    def get_callables(self, model, skip=None):
         if skip is None:
             skip = {}
 
@@ -249,17 +268,23 @@ class ChangesTracker(object):
                 d[k] = attrs[k]
 
         ## BRANCH infobox
-        if ignore_subclass_callables and model.__base__ != models.Model:
-            base_callables = self.get_callables(model.__base__, skip=skip,
-                ignore_subclass_callables=False)
-            # Let's not duplicate callables on the base class.
-            for k in base_callables:
-                if k in d.keys():
-                    del d[k]
+        #if (ignore_subclass_callables and model.__base__ != models.Model and
+        #    not self.ineligible_for_history_model(model.__base__)):
+        #    base_callables = self.get_callables(model.__base__, skip=skip,
+        #        ignore_subclass_callables=False)
+        #    # Let's not duplicate callables on the base class.
+        #    for k in base_callables:
+        #        if k in d.keys():
+        #            del d[k]
         ## BRANCH infobox_diff omits this ^^^
+        if model.__base__ != models.Model:
+            base_callables = self.get_callables(model.__base__)
+            for k in base_callables:
+                if k not in d:
+                    d[k] = base_callables[k]
         return d
 
-    def get_fields(self, model, ignore_subclass_fields=True):
+    def get_fields(self, model):
         """
         Creates copies of the model's original fields.
 
@@ -364,19 +389,24 @@ class ChangesTracker(object):
                     )
 
             attrs[field.name] = field
+        if 'MapData' in str(model): import pdb;pdb.set_trace()
         ## BRANCH infobox
-        if (ignore_subclass_fields and model.__base__ != models.Model and
-            not model.__base__._meta.abstract):
-            base_fields = self.get_fields(model.__base__,
-                ignore_subclass_fields=False)
-            # Let's not duplicate fields on the base class.
-            for k in base_fields:
-                if k in attrs.keys():
-                    del attrs[k]
+        #if ignore_subclass_fields and model.__base__ != models.Model:
+        #    base_fields = self.get_fields(model.__base__,
+        #        ignore_subclass_fields=False)
+        #    # Let's not duplicate fields on the base class.
+        #    for k in base_fields:
+        #        if k in attrs.keys():
+        #            del attrs[k]
         ## BRANCH infobox_diff omits this
 
-	if 'PageValue' in str(model):
-	  import pdb;pdb.set_trace()
+        # Get the subclass fields that we may not already have.
+        if model.__base__ != models.Model:
+            base_fields = self.get_fields(model.__base__)
+            for k in base_fields:
+                if k not in attrs:
+                    attrs[k] = base_fields[k]
+
         return attrs
 
     def get_extra_history_fields(self, model):
