@@ -101,13 +101,23 @@ class ChangesTracker(object):
             '__module__': model.__module__,
         }
 
+        base_is_abstract = (
+            hasattr(model.__base__, '_meta') and model.__base__._meta.abstract)
+        if not base_is_abstract:
+            use_subclass_directly = True
+        else:
+            use_subclass_directly = False
+
         attrs.update(get_history_methods(self, model))
         ### BRANCH infobox
         # Store _misc_members for later lookup.
-        misc_members = self.get_misc_members(model)
+        misc_members = self.get_misc_members(model,
+            use_subclass_directly=use_subclass_directly)
         attrs.update(misc_members)
-        attrs.update({'_original_callables':
-            self.get_callables(model, skip=misc_members)})
+        attrs.update({
+            '_original_callables':
+                self.get_callables(model, skip=misc_members,
+                    use_subclass_directly=use_subclass_directly)})
         attrs.update(Meta=type('Meta', (), self.get_meta_options(model)))
         ### BRANCH infobox_diff
         #if not model._meta.parents:
@@ -123,8 +133,11 @@ class ChangesTracker(object):
             # need to re-declare these history fields.
             attrs.update(get_history_fields(self, model))
             attrs.update(self.get_extra_history_fields(model))
+        #attrs.update(get_history_fields(self, model))
+        #attrs.update(self.get_extra_history_fields(model))
 
-        attrs.update(self.get_fields(model))
+        attrs.update(self.get_fields(model,
+            use_subclass_directly=use_subclass_directly))
 
         name = '%s_hist' % model._meta.object_name
         # Let's have our historical object subclass the parent
@@ -135,13 +148,17 @@ class ChangesTracker(object):
         # Migrations are easier this way -- you migrate historical
         # models in the exact same fashion as non-historical models.
         ### BRANCH infobox
-        if 'PageValue' in str(model): import pdb;pdb.set_trace()
-        if is_versioned(model.__base__):
-            return type(name, (get_versions(model.__base__).model,), attrs)
+        #if 'PageValue' in str(model): import pdb;pdb.set_trace()
+        #if is_versioned(model.__base__):
+        #    return type(name, (get_versions(model.__base__).model,), attrs)
         #if (hasattr(model.__base__, '_meta') and
         #    self.ineligible_for_history_model(model.__base__)):
         #    return type(name, (models.Model,), attrs)
         #return type(name, (model.__base__,), attrs)
+        if use_subclass_directly:
+            if is_versioned(model.__base__):
+                return type(name, (get_versions(model.__base__).model,), attrs)
+            return type(name, (model.__base__,), attrs)
         return type(name, (models.Model,), attrs)
         ### BRANCH infobox_diff
         #if model._meta.parents:
@@ -190,7 +207,7 @@ class ChangesTracker(object):
         'db_tablespace',
     ]
 
-    def get_misc_members(self, model):
+    def get_misc_members(self, model, use_subclass_directly=False):
         # Would like to know a better way to do this.
         # Ideally we would subclass the model and then extend it,
         # but Django won't let us replace a field (in our case, a
@@ -248,14 +265,24 @@ class ChangesTracker(object):
         #        if k in base_misc_members:
         #            del d[k]
         ## BRANCH infobox_diff omits this ^^^
+
         if model.__base__ != models.Model:
-            base_members = self.get_misc_members(model.__base__)
-            for k in base_members:
-                if k not in d:
-                    d[k] = base_members[k]
+            if use_subclass_directly:
+                base_misc_members = self.get_misc_members(model.__base__,
+                    use_subclass_directly=False)
+                # Let's not duplicate members on the base class.
+                for k in d.keys():
+                    if k in base_misc_members:
+                        del d[k]
+            else:
+                base_members = self.get_misc_members(model.__base__,
+                    use_subclass_directly=False)
+                for k in base_members:
+                    if k not in d:
+                        d[k] = base_members[k]
         return d
 
-    def get_callables(self, model, skip=None):
+    def get_callables(self, model, skip=None, use_subclass_directly=False):
         if skip is None:
             skip = {}
 
@@ -277,14 +304,24 @@ class ChangesTracker(object):
         #        if k in d.keys():
         #            del d[k]
         ## BRANCH infobox_diff omits this ^^^
+
         if model.__base__ != models.Model:
-            base_callables = self.get_callables(model.__base__)
-            for k in base_callables:
-                if k not in d:
-                    d[k] = base_callables[k]
+            if use_subclass_directly:
+                base_callables = self.get_callables(model.__base__,
+                    use_subclass_directly=False)
+                # Let's not duplicate callables on the base class.
+                for k in d.keys():
+                    if k in base_callables:
+                        del d[k]
+            else:
+                base_callables = self.get_callables(model.__base__,
+                    use_subclass_directly=False)
+                for k in base_callables:
+                    if k not in d:
+                        d[k] = base_callables[k]
         return d
 
-    def get_fields(self, model):
+    def get_fields(self, model, use_subclass_directly=False):
         """
         Creates copies of the model's original fields.
 
@@ -400,12 +437,20 @@ class ChangesTracker(object):
         #            del attrs[k]
         ## BRANCH infobox_diff omits this
 
-        # Get the subclass fields that we may not already have.
         if model.__base__ != models.Model:
-            base_fields = self.get_fields(model.__base__)
-            for k in base_fields:
-                if k not in attrs:
-                    attrs[k] = base_fields[k]
+            if use_subclass_directly:
+                base_fields = self.get_fields(model.__base__,
+                    use_subclass_directly=False)
+                # Let's not duplicate members on the base class.
+                for k in attrs.keys():
+                    if k in base_fields:
+                        del attrs[k]
+            else:
+                base_fields = self.get_fields(model.__base__,
+                    use_subclass_directly=False)
+                for k in base_fields:
+                    if k not in attrs:
+                        attrs[k] = base_fields[k]
 
         return attrs
 
