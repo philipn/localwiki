@@ -23,8 +23,8 @@
   </style>
 {% endblock %}
 
-{% block title %}{% blocktrans with new_name=new.page.name %}Differences for tag versions for {{ new_name }}{% endblocktrans %}{% endblock %}
-{% block header_title %}{% blocktrans with new_name=new.page.name %}Differences for tag versions for {{ new_name }}{% endblocktrans %}{% endblock %}
+{% block title %}{% blocktrans with new_name=new.model.name %}Differences for infobox versions on {{ new_name }}{% endblocktrans %}{% endblock %}
+{% block header_title %}{% blocktrans with new_name=new.model.name %}Differences for infobox versions on {{ new_name }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
   <table class="infobox" width="100%">
