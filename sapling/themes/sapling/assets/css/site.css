@@ -914,6 +914,11 @@ div.templates li .button {
     padding-left: 20px;
 }
 
+#recentchanges .infobox .changelabel span {
+    background: url(../img/infobox-icon-small.png) 0 2px no-repeat;
+    padding-left: 21px;
+}
+
 .see_also {
     margin-top: 2em;
     clear: both;
